@@ -29,6 +29,11 @@ type
     function Get_(const Key:string):OleVariant;
     procedure Set_(const Key:string; Value:OleVariant);
 
+    function Incr(const Key:string):integer;
+    function Decr(const Key:string):integer;
+    function IncrBy(const Key:string;By:integer):integer;
+    function DecrBy(const Key:string;By:integer):integer;
+
     property TimeoutMS:cardinal read FTimeoutMS write SetTimeoutMS;
     property Values[const Key:string]:OleVariant read Get_ write Set_; default;
   end;
@@ -245,6 +250,26 @@ begin
     end;
    end;
   Result:=Cmd(s);
+end;
+
+function TRedisWire.Incr(const Key: string): integer;
+begin
+  Result:=Cmd('incr '+Key+#13#10);
+end;
+
+function TRedisWire.Decr(const Key: string): integer;
+begin
+  Result:=Cmd('decr '+Key+#13#10);
+end;
+
+function TRedisWire.IncrBy(const Key: string; By: integer): integer;
+begin
+  Result:=Cmd('incr '+Key+' '+IntToStr(By)+#13#10);
+end;
+
+function TRedisWire.DecrBy(const Key: string; By: integer): integer;
+begin
+  Result:=Cmd('decr '+Key+' '+IntToStr(By)+#13#10);
 end;
 
 end.
