@@ -231,9 +231,11 @@ begin
     case vt and varTypeMask of
       varEmpty,varNull:
         s:=s+'$-1'#13#10;
+      {//see https://github.com/antirez/redis/issues/1709
       varSmallint,varInteger,
       varShortInt,varByte,varWord,varLongWord,varInt64:
         s:=s+':'+VarToStr(Args[i])+#13#10;
+      }
       else
        begin
         t:=VarToStr(Args[i]);
