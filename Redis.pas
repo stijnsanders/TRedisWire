@@ -23,19 +23,20 @@ type
     constructor Create(const Host:string;Port:integer=6379);
     destructor Destroy; override;
 
-    function Cmd(const Cmd:string):OleVariant; overload;
+    function Cmd(const CmdStr: WideString):OleVariant; overload;
+    function Cmd(const CmdStr: UTF8String):OleVariant; overload;
     function Cmd(const Args:array of OleVariant):OleVariant; overload;
 
-    function Get_(const Key:string):OleVariant;
-    procedure Set_(const Key:string; Value:OleVariant);
+    function Get_(const Key:WideString):OleVariant;
+    procedure Set_(const Key:WideString; Value:OleVariant);
 
-    function Incr(const Key:string):integer;
-    function Decr(const Key:string):integer;
-    function IncrBy(const Key:string;By:integer):integer;
-    function DecrBy(const Key:string;By:integer):integer;
+    function Incr(const Key:WideString):integer;
+    function Decr(const Key:WideString):integer;
+    function IncrBy(const Key:WideString;By:integer):integer;
+    function DecrBy(const Key:WideString;By:integer):integer;
 
     property TimeoutMS:cardinal read FTimeoutMS write SetTimeoutMS;
-    property Values[const Key:string]:OleVariant read Get_ write Set_; default;
+    property Values[const Key: WideString]:OleVariant read Get_ write Set_; default;
   end;
 
   ERedisError=class(Exception);
@@ -63,9 +64,14 @@ begin
   inherited;
 end;
 
-function TRedisWire.Cmd(const Cmd: string): OleVariant;
+function TRedisWire.Cmd(const CmdStr: WideString): OleVariant;
+begin
+  Result:=Cmd(UTF8Encode(CmdStr));
+end;
+
+function TRedisWire.Cmd(const CmdStr: UTF8String): OleVariant;
 var
-  Data:AnsiString;
+  Data:UTF8String;
   DataLength,DataIndex,DataLast,DataNext,ArrayLength,ArrayIndex:integer;
   InArray:boolean;
   function ReadInt:integer;
@@ -111,7 +117,7 @@ begin
     setsockopt(FSocket.Handle,SOL_SOCKET,SO_RCVTIMEO,PAnsiChar(@FTimeoutMS),4);
    end;
   //send command
-  Data:=Cmd;//UTF8Encode?
+  Data:=CmdStr;
   DataLength:=Length(Data);
   //TODO: check Copy(Data,DataLength-1,2)=#13#10?
   if FSocket.SendBuf(Data[1],DataLength)<>DataLength then
@@ -210,20 +216,20 @@ begin
     setsockopt(FSocket.Handle,SOL_SOCKET,SO_RCVTIMEO,PAnsiChar(@FTimeoutMS),4);
 end;
 
-function TRedisWire.Get_(const Key: string): OleVariant;
+function TRedisWire.Get_(const Key: WideString): OleVariant;
 begin
   Result:=Cmd('GET '+Key+#13#10);
 end;
 
-procedure TRedisWire.Set_(const Key: string; Value: OleVariant);
+procedure TRedisWire.Set_(const Key: WideString; Value: OleVariant);
 begin
   //TODO: encode value
-  Cmd('SET '+Key+' "'+VarToStr(Value)+'"'#13#10);
+  Cmd('SET '+Key+' "'+VarToWideStr(Value)+'"'#13#10);
 end;
 
 function TRedisWire.Cmd(const Args: array of OleVariant): OleVariant;
 var
-  s,t:string;
+  s,t:WideString;
   i:integer;
   vt:word;
 begin
@@ -239,11 +245,11 @@ begin
       {//see https://github.com/antirez/redis/issues/1709
       varSmallint,varInteger,
       varShortInt,varByte,varWord,varLongWord,varInt64:
-        s:=s+':'+VarToStr(Args[i])+#13#10;
+        s:=s+':'+VarToWideStr(Args[i])+#13#10;
       }
       else
        begin
-        t:=VarToStr(Args[i]);
+        t:=VarToWideStr(Args[i]);
         s:=s+'$'+IntToStr(Length(t))+#13#10+t+#13#10;
        end;
       //else raise ERedisError.Create('#'+IntToStr(i)+': Variant type not supported');
@@ -252,22 +258,22 @@ begin
   Result:=Cmd(s);
 end;
 
-function TRedisWire.Incr(const Key: string): integer;
+function TRedisWire.Incr(const Key: WideString): integer;
 begin
   Result:=Cmd('incr '+Key+#13#10);
 end;
 
-function TRedisWire.Decr(const Key: string): integer;
+function TRedisWire.Decr(const Key: WideString): integer;
 begin
   Result:=Cmd('decr '+Key+#13#10);
 end;
 
-function TRedisWire.IncrBy(const Key: string; By: integer): integer;
+function TRedisWire.IncrBy(const Key: WideString; By: integer): integer;
 begin
   Result:=Cmd('incr '+Key+' '+IntToStr(By)+#13#10);
 end;
 
-function TRedisWire.DecrBy(const Key: string; By: integer): integer;
+function TRedisWire.DecrBy(const Key: WideString; By: integer): integer;
 begin
   Result:=Cmd('decr '+Key+' '+IntToStr(By)+#13#10);
 end;
