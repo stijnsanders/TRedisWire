@@ -77,9 +77,20 @@ var
   function ReadInt:integer;
   var
     i:integer;
+    neg:boolean;
   begin
     Result:=0;
+    neg:=false;//default
     inc(DataIndex);
+    if (DataIndex<=DataLength) then
+      case Data[DataIndex] of
+        '-':
+         begin
+          neg:=true;
+          inc(DataIndex);
+         end;
+        '+':inc(DataIndex);
+      end;
     while (DataIndex<=DataLength) and (Data[DataIndex]<>#13) do
      begin
       while (DataIndex<=DataLength) and (Data[DataIndex]<>#13) do
@@ -103,6 +114,7 @@ var
        end;
      end;
     inc(DataIndex,2);//#13#10
+    if neg then Result:=-Result;
   end;
 var
   i:integer;  
